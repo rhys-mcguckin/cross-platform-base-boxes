@@ -1,0 +1,7 @@
+/.bundle
+/iso/
+/packer_cache/
+/output*
+*.iso
+*.box
+

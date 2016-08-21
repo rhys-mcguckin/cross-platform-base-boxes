@@ -1,0 +1,78 @@
+{
+    "builders": [{
+        "type": "virtualbox-iso",
+        "vboxmanage": [
+          [ "modifyvm", "{{.Name}}", "--audiocontroller", "hda" ],
+          [ "modifyvm", "{{.Name}}", "--boot1", "dvd" ],
+          [ "modifyvm", "{{.Name}}", "--boot2", "disk" ],
+          [ "modifyvm", "{{.Name}}", "--chipset", "ich9" ],
+          [ "modifyvm", "{{.Name}}", "--firmware", "efi" ],
+          [ "modifyvm", "{{.Name}}", "--hpet", "on" ],
+          [ "modifyvm", "{{.Name}}", "--keyboard", "usb" ],
+          [ "modifyvm", "{{.Name}}", "--memory", "2048" ],
+          [ "modifyvm", "{{.Name}}", "--mouse", "usbtablet" ],
+          [ "modifyvm", "{{.Name}}", "--usbehci", "on" ],
+          [ "modifyvm", "{{.Name}}", "--vram", "128" ],
+          [ "storagectl", "{{.Name}}", "--name", "IDE Controller", "--remove" ]
+        ],
+        "boot_wait": "2s",
+        "disk_size": 184320,
+        "guest_additions_mode": "disable",
+        "guest_os_type": "MacOS1011_64",
+        "hard_drive_interface": "sata",
+        "iso_checksum_type": "none",
+        "iso_interface": "sata",
+        "iso_url": "{{user `iso_url`}}",
+        "shutdown_command": "echo '{{user `username`}}'|sudo -S shutdown -h now",
+        "ssh_port": 22,
+        "ssh_username": "{{user `username`}}",
+        "ssh_password": "{{user `password`}}",
+        "ssh_wait_timeout": "10000s"
+    }],
+    "post-processors": [{
+      "type": "vagrant",
+      "keep_input_artifact": true,
+      "output": "macosx-{{.Provider}}.box",
+      "vagrantfile_template": "macosx/vagrantfile.template"
+    }],
+    "provisioners": [
+      {
+        "type": "shell-local",
+        "command": "sleep {{user `provisioning_delay`}}"
+      },
+      {
+        "destination": "/private/tmp/set_kcpassword.py",
+        "source": "macosx/scripts/support/set_kcpassword.py",
+        "type": "file"
+      },
+      {
+        "execute_command": "chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}",
+        "scripts": [
+          "macosx/scripts/vagrant.sh",
+          "macosx/scripts/xcode-cli-tools.sh",
+          "macosx/scripts/add-network-interface-detection.sh",
+          "macosx/scripts/autologin.sh",
+          "macosx/scripts/system-update.sh",
+          "macosx/scripts/homebrew.sh",
+          "macosx/scripts/shrink.sh"
+        ],
+        "environment_vars": [
+          "AUTOLOGIN={{user `autologin`}}",
+          "INSTALL_VAGRANT_KEYS={{user `install_vagrant_keys`}}",
+          "PASSWORD={{user `password`}}",
+          "UPDATE_SYSTEM={{user `update_system`}}",
+          "USERNAME={{user `username`}}"
+        ],
+        "type": "shell"
+      }
+    ],
+    "variables": {
+      "autologin": "true",
+      "install_vagrant_keys": "true",
+      "iso_url": "iso/OSX_InstallESD_10.9.3_13D65.dmg",
+      "username": "vagrant",
+      "password": "vagrant",
+      "provisioning_delay": "0",
+      "update_system": "true"
+    }
+}
